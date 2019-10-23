@@ -2,7 +2,11 @@
 
 public class FieldLoader {
     public static boolean[][] loadField() {
-        //TODO
-        return null;
+        boolean[][] bombs = {
+                {true, false, false},
+                {false, false, false},
+                {false, true, false}
+        };
+        return bombs;
     }
 }
