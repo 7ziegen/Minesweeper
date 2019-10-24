@@ -1,10 +1,12 @@
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public class FieldGenerator {
     private Map<Integer, Method> commandList;
+    private int[][] gameField;
     public FieldGenerator() {
         this.commandList = new HashMap<Integer, Method>();
         try {
@@ -22,39 +24,107 @@ public class FieldGenerator {
         }
 
     }
-    public int[][] generateGamefield(boolean[][] bombslist) {
+    public void generateGamefield(boolean[][] bombslist) throws Exception {
+        if(!boardCheck(bombslist)) {
+            throw new Exception("Dimension does not match.");
+        }
+        int[][] gamefield = new int[bombslist.length][bombslist[0].length];
+        if (bombslist.length < 3 || bombslist[0].length < 3) {
+            this.handleSpecialBoard(bombslist);
+        } else {
+            for (int i = 0; i < bombslist.length; i++) {
+                for (int j = 0; j < bombslist[0].length; j++) {
+                    if (bombslist[i][j]) {
+                        gamefield[i][j] = -9;
+                        // posCode
+                        // 0000 0 middle
+                        // 0001 1 top
+                        // 0010 2 bottom
+                        // 0100 4 left
+                        // 1000 8 right
+                        // 0101 5 top left
+                        // 1001 9 top right
+                        // 0110 6 bottom left
+                        // 1010 10 bottom right
+                        int posCode = 0;
+                        posCode += i == 0 ? 1 : 0;
+                        posCode += i == bombslist.length - 1 ? 2 : 0;
+                        posCode += j == 0 ? 4 : 0;
+                        posCode += j == bombslist[0].length - 1 ? 8 : 0;
+                        try {
+                            commandList.get(posCode).invoke(this, gamefield, i, j);
+                        } catch (IllegalAccessException e) {
+                            e.printStackTrace();
+                        } catch (InvocationTargetException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+            this.gameField = gamefield;
+        }
+
+    }
+
+    private void handleSpecialBoard(boolean[][] bombslist) {
         int[][] gamefield = new int[bombslist.length][bombslist[0].length];
         for(int i = 0; i < bombslist.length; i++) {
             for(int j = 0; j < bombslist[0].length; j++) {
                 if(bombslist[i][j]) {
-                    gamefield[i][j] = -1;
-                    // posCode
-                    // 0000 0 middle
-                    // 0001 1 top
-                    // 0010 2 bottom
-                    // 0100 4 left
-                    // 1000 8 right
-                    // 0101 5 top left
-                    // 1001 9 top right
-                    // 0110 6 bottom left
-                    // 1010 10 bottom right
-                    int posCode = 0;
-                    posCode += i == 0 ? 1 : 0;
-                    posCode += i == bombslist.length - 1 ? 2 : 0 ;
-                    posCode += j == 0 ? 4 : 0;
-                    posCode += j == bombslist[0].length - 1 ? 8 : 0;
-                    try {
-                        commandList.get(posCode).invoke(this, gamefield, i , j);
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
-                    } catch (InvocationTargetException e) {
-                        e.printStackTrace();
+                    gamefield[i][j] = -9;
+                    // Top left
+                    if (i - 1 > -1 && j - 1 > -1) {
+                        gamefield[i - 1][j - 1] += 1;
+                    }
+                    // Top
+                    if (i - 1 > -1) {
+                        gamefield[i - 1][j] += 1;
+                    }
+                    // Top right
+                    if (i - 1 > -1 && j + 1 < bombslist[0].length) {
+                        gamefield[i - 1][j + 1] += 1;
+                    }
+                    // left
+                    if (j - 1 > -1) {
+                        gamefield[i][j - 1] += 1;
+                    }
+                    // right
+                    if (j + 1 < bombslist[0].length) {
+                        gamefield[i][j + 1] += 1;
+                    }
+                    // bottom left
+                    if (i + 1 < bombslist.length && j - 1 > -1) {
+                        gamefield[i + 1][j - 1] += 1;
+                    }
+                    // bottom
+                    if (i + 1 < bombslist.length) {
+                        gamefield[i + 1][j] += 1;
+                    }
+                    // bottom right
+                    if (i + 1 < bombslist.length && j + 1 < bombslist[0].length) {
+                        gamefield[i + 1][j + 1] += 1;
                     }
                 }
             }
         }
-        return gamefield;
+        this.gameField = gamefield;
     }
+
+    // Check Board Dimension
+    private boolean boardCheck(boolean[][] bombslist) {
+        for(int i = 0; i < bombslist.length; i++) {
+            if (bombslist[i].length != bombslist[0].length) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public String fieldToSting() {
+        return Arrays.deepToString(this.gameField).replace("], ", "\n").replace("[[", "").replace("]]", "").replace("[", "").replaceAll("-[1-9]","*");
+    }
+
+
     public void handleMiddle(int[][] gamefield, int i, int j) {
         // Top left
         gamefield[i - 1][j - 1] += 1;
