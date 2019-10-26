@@ -121,4 +121,22 @@ public class FieldTest {
                         "2, *",
                 fg.fieldToSting());
     }
+
+    @Test()
+    public void test9() throws Exception {
+        boolean[][] bombs = {
+                {true},
+                {false},
+                {false},
+                {false}
+        };
+        FieldGenerator fg = new FieldGenerator();
+        fg.generateGamefield(bombs);
+        Assert.assertEquals("wrong result",
+                "*\n" +
+                        "1\n" +
+                        "0\n" +
+                        "0",
+                fg.fieldToSting());
+    }
 }
